@@ -17,7 +17,8 @@
 // Fbx Loadをもうちょっと最適化（一つのメッシュを使い回せるように）
 #include "FBXDataContainerSystem.h"
 
-#include "TitleScene.h"
+#include "TitleScene.h"			// タイトル画面の処理まとめ
+#include "GameOverScene.h"		// ゲームオーバー画面の処理まとめ
 
 // GameObjects
 #include "SkyDomeComponent.h"	// スカイドーム
@@ -29,7 +30,7 @@
 #include "CameraChangerComponent.h"			// カメラ切り替え
 #include "ThirdPersonCameraController.h"	// 三人称カメラ
 
-#include "WildHuntUIRender.h"		// Timer
+#include "PlayTimerUI.h"		// Timer
 #include "PlayTimerBGUI.h"			// ゲームタイマーのバックグラウンドUI
 
 #include "HeartItemComponent.h"		// ハートアイテム
@@ -195,19 +196,28 @@ HRESULT WildHuntScene::ChangeGameScene(UINT scene)
 
 				engine->GetTextureManager()->CreateTextureFromFile(engine->GetDirect3DDevice(), L"TitleTexture", L"./Resources/textures/Title/WildHunt_TitleImage.png");
 
+				engine->GetTextureManager()->CreateTextureFromFile(engine->GetDirect3DDevice(), L"GameOver", L"./Resources/textures/GameOver/WildHunt_GameOver.png");
+
 				engine->GetTextureManager()->CreateTextureFromFile(engine->GetDirect3DDevice(), L"ToneTexture",L"./Resources/textures/ToonShader/Tone.png");
 
 				engine->GetTextureManager()->CreateTextureFromFile(engine->GetDirect3DDevice(), L"HPBarTexture", L"./Resources/textures/HPBar/HpBar_Unitytyan.png");
 
 				engine->GetTextureManager()->CreateTextureFromFile(engine->GetDirect3DDevice(), L"HitEffect", L"./Resources/textures/HitEffect/hit_eff.png");
 
-				engine->GetTextureManager()->CreateTextureFromFile(engine->GetDirect3DDevice(), L"ParchmentResult", L"./Resources/textures/ParchmentResult/ParchmentUI.png");
+				engine->GetTextureManager()->CreateTextureFromFile(engine->GetDirect3DDevice(), L"ParchmentResult", L"./Resources/textures/Result/ParchmentUI.png");
 
 				engine->GetTextureManager()->CreateTextureFromFile(engine->GetDirect3DDevice(), L"PlayTimerBG", L"./Resources/textures/PlayTimerUI/PlayTimerBG.png");
 
-				engine->GetTextureManager()->CreateTextureFromFile(engine->GetDirect3DDevice(), L"Transition", L"./Resources/textures/Transition/8bit-transition.png");
+				engine->GetTextureManager()->CreateTextureFromFile(engine->GetDirect3DDevice(), L"Transition", L"./Resources/textures/Transition/8bit-transitionV1.2.png");
 				
 				engine->GetTextureManager()->CreateTextureFromFile(engine->GetDirect3DDevice(), L"FireBreathe", L"./Resources/textures/FireBreathe/FireBreatheEffect.png");
+
+				engine->GetTextureManager()->CreateTextureFromFile(engine->GetDirect3DDevice(), L"ClearTime", L"./Resources/textures/Result/WildHunt_ClearTime.png");
+
+				engine->GetTextureManager()->CreateTextureFromFile(engine->GetDirect3DDevice(), L"TotalDamage", L"./Resources/textures/Result/WildHunt_TotalDamage.png");
+
+				engine->GetTextureManager()->CreateTextureFromFile(engine->GetDirect3DDevice(), L"OverallRank", L"./Resources/textures/Result/WildHunt_OverallRank.png");
+
 
 
 				engine->GetTextureManager()->CreateRenderTargetTexture(engine->GetDirect3DDevice(), L"NormalBuffer",
@@ -366,6 +376,12 @@ HRESULT WildHuntScene::ChangeGameScene(UINT scene)
 					return E_FAIL;
 				if (!soMng->LoadSoundFile(L"./Resources/sounds/univ0001.wav", soundId))
 					return E_FAIL;
+				if (!soMng->LoadSoundFile(L"./Resources/sounds/GameOverSE.wav", soundId))
+					return E_FAIL;
+				if (!soMng->LoadSoundFile(L"./Resources/sounds/GameClearSE.wav", soundId))
+					return E_FAIL;
+				if (!soMng->LoadSoundFile(L"./Resources/sounds/Heal.wav", soundId))
+					return E_FAIL;
 
 				// システム制御統合オブジェクト登録
 				m_systemObject = make_unique<GameObject>(nullptr);
@@ -386,8 +402,6 @@ HRESULT WildHuntScene::ChangeGameScene(UINT scene)
 				cameraObj->AddComponent(titleCamera);
 
 				titleCamera->SetNextScene(GAME_SCENES::IN_GAME);	// Space押したときに、IN_GAMEに
-				titleCamera->SetBGColor(0.5, 0.5f, 0.5f);
-				titleCamera->SetImagePosition(74.0f);
 
 				AddSceneObject(cameraObj);
 
@@ -402,7 +416,16 @@ HRESULT WildHuntScene::ChangeGameScene(UINT scene)
 				// カメラリスト追加 UIモード時用
 				m_cameraComponents[L"HUDCamera"] = transitionAnimator;
 
-				transitionAnimator->SetWipeMode(WipeMode::WipeOut);	// アニメーションはWipeOutから
+				if (m_scene == static_cast<UINT>(GAME_SCENES::AWAKE))
+				{
+					transitionAnimator->SetWipeMode(WipeMode::WipeOut);	// アニメーションはWipeOutから
+				}
+				else
+				{
+					// 最初以外の時は画面遷移アリにしておく
+					transitionAnimator->SetWipeMode(WipeMode::WipeIn);	// アニメーションはWipeInから
+					transitionAnimator->PlayTransition();
+				}
 
 				titleCamera->SetTransitionAnimatorComponent(transitionAnimator);	// TransitionAnimatorを実行するために、コンポーネントのポインタを渡す
 			}
@@ -517,7 +540,7 @@ HRESULT WildHuntScene::ChangeGameScene(UINT scene)
 				m_cameraComponents[L"HUDCamera"] = playTimerBGUI;
 
 				cameraObj = new GameObject(new CharacterData());
-				WildHuntUIRender* uiRender = new WildHuntUIRender();
+				PlayTimerUI* uiRender = new PlayTimerUI();
 				cameraObj->AddComponent(uiRender);
 
 				AddSceneObject(cameraObj);
@@ -571,6 +594,18 @@ HRESULT WildHuntScene::ChangeGameScene(UINT scene)
 				heartObj->AddComponent(new HeartItemComponent());
 				AddSceneObject(heartObj);
 
+				// ParchmentResultUIを登録
+				cameraObj = new GameObject(new CharacterData());
+				ParchmentResultUI* parchmentResultUI = new ParchmentResultUI();
+				cameraObj->AddComponent(parchmentResultUI);
+				AddSceneObject(cameraObj);
+
+				// カメラリスト追加 UIモード時用
+				m_cameraComponents[L"HUDCamera"] = parchmentResultUI;
+				parchmentResultUI->SetEnemyCnt(10);	// 敵の数を設定
+				parchmentResultUI->SetGameTimerComponent(uiRender);
+				parchmentResultUI->SetUnityChanPlayerComponent(unityChanPlayer);
+
 				// TurtleShellZakoEnemy登録
 				FBXCharacterData* turtleShellZakoEnemyFbx = new FBXCharacterData();	// FBX用CharacterData
 
@@ -589,7 +624,7 @@ HRESULT WildHuntScene::ChangeGameScene(UINT scene)
 				turtleShellZakoEnemyObj->AddComponent(turtleShellZakoEnemy);	// 本体コンポーネントをセット
 				AddSceneObject(turtleShellZakoEnemyObj);
 
-				turtleShellZakoEnemy->SetUIRender(uiRender);
+				turtleShellZakoEnemy->SetParchmentResultComp(parchmentResultUI);
 				unityChanPlayer->SetZakoEnemyComponentList(turtleShellZakoEnemy);
 
 				turtleShellZakoEnemyFbx = new FBXCharacterData();
@@ -601,7 +636,7 @@ HRESULT WildHuntScene::ChangeGameScene(UINT scene)
 				turtleShellZakoEnemyObj->AddComponent(turtleShellZakoEnemy);	// 本体コンポーネントをセット
 				AddSceneObject(turtleShellZakoEnemyObj);
 
-				turtleShellZakoEnemy->SetUIRender(uiRender);
+				turtleShellZakoEnemy->SetParchmentResultComp(parchmentResultUI);
 				unityChanPlayer->SetZakoEnemyComponentList(turtleShellZakoEnemy);
 
 				turtleShellZakoEnemyFbx = new FBXCharacterData();
@@ -613,7 +648,7 @@ HRESULT WildHuntScene::ChangeGameScene(UINT scene)
 				turtleShellZakoEnemyObj->AddComponent(turtleShellZakoEnemy);	// 本体コンポーネントをセット
 				AddSceneObject(turtleShellZakoEnemyObj);
 
-				turtleShellZakoEnemy->SetUIRender(uiRender);
+				turtleShellZakoEnemy->SetParchmentResultComp(parchmentResultUI);
 				unityChanPlayer->SetZakoEnemyComponentList(turtleShellZakoEnemy);
 
 				turtleShellZakoEnemyFbx = new FBXCharacterData();
@@ -625,7 +660,67 @@ HRESULT WildHuntScene::ChangeGameScene(UINT scene)
 				turtleShellZakoEnemyObj->AddComponent(turtleShellZakoEnemy);	// 本体コンポーネントをセット
 				AddSceneObject(turtleShellZakoEnemyObj);
 
-				turtleShellZakoEnemy->SetUIRender(uiRender);
+				turtleShellZakoEnemy->SetParchmentResultComp(parchmentResultUI);
+				unityChanPlayer->SetZakoEnemyComponentList(turtleShellZakoEnemy);
+
+				turtleShellZakoEnemyFbx = new FBXCharacterData();
+				turtleShellZakoEnemyFbx->SetMainFBX(L"TurtleShellZakoEnemy");	// メインFBXの登録
+				turtleShellZakoEnemyFbx->SetPosition(-15.0f, 0.0f, -40.0f);
+
+				turtleShellZakoEnemyObj = new GameObject(turtleShellZakoEnemyFbx);
+				turtleShellZakoEnemy = new TurtleShellZakoEnemy();
+				turtleShellZakoEnemyObj->AddComponent(turtleShellZakoEnemy);	// 本体コンポーネントをセット
+				AddSceneObject(turtleShellZakoEnemyObj);
+
+				turtleShellZakoEnemy->SetParchmentResultComp(parchmentResultUI);
+				unityChanPlayer->SetZakoEnemyComponentList(turtleShellZakoEnemy);
+
+				turtleShellZakoEnemyFbx = new FBXCharacterData();
+				turtleShellZakoEnemyFbx->SetMainFBX(L"TurtleShellZakoEnemy");	// メインFBXの登録
+				turtleShellZakoEnemyFbx->SetPosition(0.0f, 0.0f, -20.0f);
+
+				turtleShellZakoEnemyObj = new GameObject(turtleShellZakoEnemyFbx);
+				turtleShellZakoEnemy = new TurtleShellZakoEnemy();
+				turtleShellZakoEnemyObj->AddComponent(turtleShellZakoEnemy);	// 本体コンポーネントをセット
+				AddSceneObject(turtleShellZakoEnemyObj);
+
+				turtleShellZakoEnemy->SetParchmentResultComp(parchmentResultUI);
+				unityChanPlayer->SetZakoEnemyComponentList(turtleShellZakoEnemy);
+
+				turtleShellZakoEnemyFbx = new FBXCharacterData();
+				turtleShellZakoEnemyFbx->SetMainFBX(L"TurtleShellZakoEnemy");	// メインFBXの登録
+				turtleShellZakoEnemyFbx->SetPosition(0.0f, 0.0f, -30.0f);
+
+				turtleShellZakoEnemyObj = new GameObject(turtleShellZakoEnemyFbx);
+				turtleShellZakoEnemy = new TurtleShellZakoEnemy();
+				turtleShellZakoEnemyObj->AddComponent(turtleShellZakoEnemy);	// 本体コンポーネントをセット
+				AddSceneObject(turtleShellZakoEnemyObj);
+
+				turtleShellZakoEnemy->SetParchmentResultComp(parchmentResultUI);
+				unityChanPlayer->SetZakoEnemyComponentList(turtleShellZakoEnemy);
+
+				turtleShellZakoEnemyFbx = new FBXCharacterData();
+				turtleShellZakoEnemyFbx->SetMainFBX(L"TurtleShellZakoEnemy");	// メインFBXの登録
+				turtleShellZakoEnemyFbx->SetPosition(-25.0f, 0.0f, -40.0f);
+
+				turtleShellZakoEnemyObj = new GameObject(turtleShellZakoEnemyFbx);
+				turtleShellZakoEnemy = new TurtleShellZakoEnemy();
+				turtleShellZakoEnemyObj->AddComponent(turtleShellZakoEnemy);	// 本体コンポーネントをセット
+				AddSceneObject(turtleShellZakoEnemyObj);
+
+				turtleShellZakoEnemy->SetParchmentResultComp(parchmentResultUI);
+				unityChanPlayer->SetZakoEnemyComponentList(turtleShellZakoEnemy);
+
+				turtleShellZakoEnemyFbx = new FBXCharacterData();
+				turtleShellZakoEnemyFbx->SetMainFBX(L"TurtleShellZakoEnemy");	// メインFBXの登録
+				turtleShellZakoEnemyFbx->SetPosition(10.0f, 0.0f, -20.0f);
+
+				turtleShellZakoEnemyObj = new GameObject(turtleShellZakoEnemyFbx);
+				turtleShellZakoEnemy = new TurtleShellZakoEnemy();
+				turtleShellZakoEnemyObj->AddComponent(turtleShellZakoEnemy);	// 本体コンポーネントをセット
+				AddSceneObject(turtleShellZakoEnemyObj);
+
+				turtleShellZakoEnemy->SetParchmentResultComp(parchmentResultUI);
 				unityChanPlayer->SetZakoEnemyComponentList(turtleShellZakoEnemy);
 
 				// PlayerHPbarUI登録
@@ -664,6 +759,7 @@ HRESULT WildHuntScene::ChangeGameScene(UINT scene)
 				nightmareDragonEnemyObj->AddComponent(nightmareDragonEnemy);	// 本体をコンポーネントをセット
 				AddSceneObject(nightmareDragonEnemyObj);
 
+				nightmareDragonEnemy->SetParchmentResultComp(parchmentResultUI);
 				unityChanPlayer->SetNightmareDragonEnemyComponent(nightmareDragonEnemy);
 
 				// ドラゴンのブレスを登録
@@ -696,12 +792,40 @@ HRESULT WildHuntScene::ChangeGameScene(UINT scene)
 				transitionAnimator->SetWipeMode(WipeMode::WipeIn);
 				transitionAnimator->PlayTransition();
 
+				unityChanPlayer->SetTransitionAnimatorComponent(transitionAnimator);
+
 
 				engine->UploadCreatedTextures();
 			}
 			break;
 
 		case static_cast<UINT>(GAME_SCENES::GAME_OVER):	// ゲームオーバー画面
+			{
+				GameObject* cameraObj = new GameObject(new CharacterData());
+				GameOverScene* titleCamera = new GameOverScene();
+				cameraObj->AddComponent(titleCamera);
+
+				titleCamera->SetNextScene(GAME_SCENES::TITLE);	// Space押したときに、IN_GAMEに
+
+				AddSceneObject(cameraObj);
+
+				// カメラリスト追加 UIモード時用
+				m_cameraComponents[L"TitleCamera"] = titleCamera;
+
+				cameraObj = new GameObject(new CharacterData());
+				TransitionAnimator* transitionAnimator = new TransitionAnimator();
+				cameraObj->AddComponent(transitionAnimator);
+				AddSceneObject(cameraObj);
+
+				// カメラリスト追加 UIモード時用
+				m_cameraComponents[L"HUDCamera"] = transitionAnimator;
+
+				transitionAnimator->SetWipeMode(WipeMode::WipeIn);	// アニメーションはWipeInから
+				transitionAnimator->PlayTransition();
+
+				titleCamera->SetTransitionAnimatorComponent(transitionAnimator);	// TransitionAnimatorを実行するために、コンポーネントのポインタを渡す
+				
+			}
 			
 			break;
 

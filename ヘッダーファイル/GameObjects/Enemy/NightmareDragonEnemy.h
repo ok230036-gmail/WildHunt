@@ -8,7 +8,7 @@
 #include "TerrainComponent.h"
 // =====動く地形 対応 END
 
-#include "WildHuntUIRender.h"
+#include "PlayTimerUI.h"
 
 #include <HitShapes.h>
 
@@ -16,6 +16,7 @@
 #include "NightmareDragonAIStateBase.h"
 
 #include "FireBreatheEffect.h"
+#include "ParchmentResultUI.h"
 
 class NightmareDragonEnemy :
     public GameComponent
@@ -42,6 +43,8 @@ private:
 
     // ブレス処理用に追加
     FireBreatheEffect* m_pFireBreathComp;
+
+    ParchmentResultUI* m_pParchmentResultComp;
 
 protected:
     UINT m_nowDragonEnemyState;     // 現在のステート
@@ -86,6 +89,12 @@ public:
     void SetFireBreatheEffectComponent(FireBreatheEffect* fireBreathComp)
     {
         m_pFireBreathComp = fireBreathComp;
+    }
+
+    // 倒された報告用のParchmentResultUIコンポーネントをセット
+    void SetParchmentResultComp(ParchmentResultUI* pRComp)
+    {
+        m_pParchmentResultComp = pRComp;
     }
 
     // ブレスを呼び出す

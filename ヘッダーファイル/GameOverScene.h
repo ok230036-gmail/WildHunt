@@ -4,23 +4,25 @@
 
 #include "WildHuntEnum.h"
 #include "TransitionAnimator.h"
+#include "TitleScene.h"
 
 #include <memory>
 
-class TitleScene :
+class GameOverScene :
     public GameComponent
 {
 private:
-    std::unique_ptr<SpriteCharacter> m_bgSp;
-    std::unique_ptr<SpriteCharacter> m_titleImageSp;
+    std::unique_ptr<SpriteCharacter> m_gameOverImageSp;
 
     GAME_SCENES m_nextScene;    // Spaceを押したら、どのシーンにいくか
 
-    SceneState m_titleState = SceneState::SceneImage;
+    bool m_isPlayGOSound;
+    SceneState m_gameOverState = SceneState::SceneImage;
     TransitionAnimator* m_pTransitionAnimatorComp;  // TransitionAnimatorのポインタ
 
 public:
-    TitleScene();
+
+    GameOverScene();
 
     void SetNextScene(GAME_SCENES nextSc);
 

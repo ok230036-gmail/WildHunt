@@ -1,4 +1,4 @@
-#include "WildHuntUIRender.h"
+#include "PlayTimerUI.h"
 
 #include <MyAccessHub.h>
 #include <D3D12Helper.h>
@@ -7,7 +7,7 @@
 #include "WildHuntScene.h"
 
 // 座標、文字列、色とかを設定
-int WildHuntUIRender::MakeSpriteString(int startIndex, float ltX, float ltY, float width, float height, const char* str)
+int PlayTimerUI::MakeSpriteString(int startIndex, float ltX, float ltY, float width, float height, const char* str)
 {
 	int count = startIndex;
 
@@ -18,7 +18,7 @@ int WildHuntUIRender::MakeSpriteString(int startIndex, float ltX, float ltY, flo
 			m_sprites[count]->SetSpritePattern(0, width, height, m_fontMap[*str]);
 			m_sprites[count]->SetSpriteIndex(0);
 
-			m_sprites[count]->SetPosition(ltX, ltY, 0.0f);
+			m_sprites[count]->SetPosition(ltX, ltY, 1.0f);	// 他の画像を上書きしないため、ちょっと奥に表示
 			count++;
 		}
 
@@ -31,19 +31,19 @@ int WildHuntUIRender::MakeSpriteString(int startIndex, float ltX, float ltY, flo
 }
 
 // コンポーネント初期化時に呼ばれる処理
-void WildHuntUIRender::InitAction()
+void PlayTimerUI::InitAction()
 {
 	MyGameEngine* engine = MyAccessHub::GetMyGameEngine();
 	CharacterData* chData = GetGameObject()->GetCharacterData();
 
 	engine->InitCameraConstantBuffer(chData);
 
-	chData->SetPosition(0.0f, 0.0f, 0.0f);
+	chData->SetPosition(0.0f, 0.0f, 1.0f);	// 他の画像を上書きしないため、ちょっと奥に表示
 
-	// 半分直接D3D触ってるようなもんだから良くはないんだけど、マトリクスを固定で作ってしまう。
-	XMVECTOR Eye = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);		// 視点（カメラ）座標
-	XMVECTOR At = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);		// フォーカスする（カメラが向く）座標
-	XMVECTOR Up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);		// カメラの上方向単位ベクトル（カメラのロール軸）
+	// マトリクスを固定で作成
+	XMVECTOR Eye = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);		// 視点座標
+	XMVECTOR At = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);		// カメラが向く座標
+	XMVECTOR Up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);		// カメラの上方向単位ベクトル
 	XMMATRIX view = XMMatrixTranspose(MakeViewMatix(Eye, At, Up));
 	XMMATRIX proj = XMMatrixTranspose(MakeOrthographicPrjectionMatrix(engine->GetWidth(), engine->GetHeight(), 0.01f, 3.0f));
 
@@ -51,10 +51,7 @@ void WildHuntUIRender::InitAction()
 	engine->UpdateShaderResourceOnGPU(chData->GetConstantBuffer(0), &view, sizeof(XMMATRIX));
 	engine->UpdateShaderResourceOnGPU(chData->GetConstantBuffer(1), &proj, sizeof(XMMATRIX));
 
-
 	m_spriteCount = 50;
-	// 強制シーン遷移テスト
-	// testTimer = 0;
 
 	SpriteCharacter* spc;
 
@@ -67,7 +64,6 @@ void WildHuntUIRender::InitAction()
 
 		spc->SetColor(1,1,1,1);
 
-		// UI用のパイプラインは別にすべきなんだけども、記述量を減らしたいので使いまわし
 		spc->SetGraphicsPipeLine(L"Sprite");
 
 		m_sprites.push_back(std::unique_ptr<SpriteCharacter>(spc));
@@ -79,8 +75,6 @@ void WildHuntUIRender::InitAction()
 	m_fontMap.reserve(strlen(m_chList));
 
 	m_chEnd = m_chList + strlen(m_chList) * sizeof(m_chList[0]);
-
-	m_score = 0;
 
 	int index = 0;
 	float invW = 1.0f / tex->fWidth;
@@ -107,24 +101,20 @@ void WildHuntUIRender::InitAction()
 }
 
 // 毎フレーム呼ばれる処理　falseを返すとこのコンポーネントは終了し削除される
-bool WildHuntUIRender::FrameAction()
+bool PlayTimerUI::FrameAction()
 {
 	MyGameEngine* engine = MyAccessHub::GetMyGameEngine();
 	GraphicsPipeLineObjectBase* pipeLine = engine->GetPipelineManager()->GetPipeLineObject(L"Sprite");
 
+	if (!m_isStopTime)	// クリアしたらタイマーは停止
+		m_timer++;
+
 	// 右上にタイマーを表示
-	m_timer++;
 	int minutes = m_timer / 3600;				// 分
 	int seconds = (m_timer % 3600) / 60;		// 秒
 	string scorestr = std::to_string(minutes) + ":" + (seconds < 10 ? "0" : "") + std::to_string(seconds);
 
 	const char* str = scorestr.c_str();
-
-	if (m_score >= 4)
-	{
-		GAME_SCENES m_nextScene = (GAME_SCENES::TITLE);
-		MyAccessHub::GetMyGameEngine()->GetSceneController()->OrderNextScene((UINT)m_nextScene);
-	}
 
 	int count = 0;
 	float x = 220.0f + 100.0f;	// 中心は 0, 0, w960, h540
@@ -143,7 +133,7 @@ bool WildHuntUIRender::FrameAction()
 }
 
 // 終了時に呼ばれる処理
-void WildHuntUIRender::FinishAction()
+void PlayTimerUI::FinishAction()
 {
 	m_sprites.clear();
 

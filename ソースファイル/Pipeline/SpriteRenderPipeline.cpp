@@ -388,7 +388,7 @@ HRESULT SpriteRenderPipeline::CreateDescriptorHeaps()
 {
     // シェーダリソース用のヒープを確保
     D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc = {};
-    cbvHeapDesc.NumDescriptors = 12; // 最大テクスチャ数
+    cbvHeapDesc.NumDescriptors = 16; // 最大テクスチャ数、画像を増やして落ちた時は、ここを参照
     cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
     cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
     return MyAccessHub::GetMyGameEngine()->GetDirect3DDevice()->CreateDescriptorHeap(&cbvHeapDesc, IID_PPV_ARGS(m_srvHeap.ReleaseAndGetAddressOf()));

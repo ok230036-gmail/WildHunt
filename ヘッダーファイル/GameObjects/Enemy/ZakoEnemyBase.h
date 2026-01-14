@@ -8,8 +8,7 @@
 #include "TerrainComponent.h"
 // =====動く地形 対応 END
 
-#include "WildHuntUIRender.h"
-
+#include "ParchmentResultUI.h"
 #include <HitShapes.h>
 
 enum class ZakoEnemyState
@@ -34,8 +33,7 @@ protected:
 
     XMFLOAT3 m_nowPlayerPos;
 
-    WildHuntUIRender* m_pUIComp;
-
+    ParchmentResultUI* m_pParchmentResultComp;
     ZakoEnemyState m_nowZakoEnemyState;
 
 public:
@@ -52,18 +50,17 @@ public:
     // ヒット時リアクション処理
     virtual void ExtraHitReaction() = 0;
 
-    // WildHuntUIRenderのポインタをセット
-    void SetUIRender(WildHuntUIRender* uiComp)
-    {
-        m_pUIComp = uiComp;
-    }
-
     // プレイヤーの現在位置を更新
     void ChangePlayerPos(float x, float y, float z)
     {
         m_nowPlayerPos.x = x;
         m_nowPlayerPos.y = y;
         m_nowPlayerPos.z = z;
+    }
+
+    void SetParchmentResultComp(ParchmentResultUI* pRComp)
+    {
+        m_pParchmentResultComp = pRComp;
     }
 };
 

@@ -10,6 +10,42 @@
 
 #define MOVE_3D (0)				// (0)にすると2Dモード
 
+// SceneStateをswitch文
+void UnityChanPlayer::UpdateSceneState()
+{
+	MyGameEngine* engine = MyAccessHub::GetMyGameEngine();
+
+	WildHuntScene* scene = static_cast<WildHuntScene*>(engine->GetSceneController());
+	KeyBindComponent* keyBind = static_cast<KeyBindComponent*>(scene->GetKeyComponent());
+
+	switch (m_sceneState)
+	{
+	case SceneState::SceneImage:
+		if (keyBind->GetCurrentInputState(InputManager::BUTTON_STATE::BUTTON_DOWN, KeyBindComponent::BUTTON_IDS::BTN_JUMP))
+		{
+			// Spaceキーが押されたら、画面遷移のトランジションをする
+			m_pTransitionAnimatorComp->SetWipeMode(WipeMode::WipeOut);
+			m_pTransitionAnimatorComp->PlayTransition();
+
+			m_sceneState = SceneState::Transition;
+		}
+		break;
+	case SceneState::Transition:
+		if (m_pTransitionAnimatorComp->IsTransitionFinished())
+		{
+			// 画面遷移のトランジションが終了したら、Loading処理へ
+			m_sceneState = SceneState::Loading;
+		}
+
+		break;
+	case SceneState::Loading:
+
+		// シーン切り替え呼び出し
+		MyAccessHub::GetMyGameEngine()->GetSceneController()->OrderNextScene((UINT)m_nextScene);
+		break;
+	}
+}
+
 // コンポーネント初期化時に呼ばれる処理
 void UnityChanPlayer::InitAction()
 {
@@ -60,6 +96,10 @@ void UnityChanPlayer::InitAction()
 	// ユニティちゃんのState初期化
 	m_nowUnityChanMotion = UnityChanMotion::Idle;
 	m_extraAction = false;
+
+	// ゲームオーバーへの遷移の初期化
+	m_isTransition = false;
+	m_sceneState = SceneState::SceneImage;
 }
 
 // 毎フレーム呼ばれる処理　falseを返すとこのコンポーネントは終了し削除される
@@ -152,7 +192,7 @@ bool UnityChanPlayer::FrameAction()
 			// 空中にいるときの処理
 			if (m_onGround)
 			{
-				if (keyBind->GetCurrentInputState(InputManager::BUTTON_STATE::BUTTON_DOWN, KeyBindComponent::BUTTON_IDS::BTN_JUMP))
+				if (keyBind->GetCurrentInputState(InputManager::BUTTON_STATE::BUTTON_DOWN, KeyBindComponent::BUTTON_IDS::BTN_JUMP) && !m_isTransition)
 				{
 					m_onGround = false;
 					m_YSpeed = m_jumpPower;
@@ -313,15 +353,15 @@ bool UnityChanPlayer::FrameAction()
 				m_evadeMoveVect = rotMove;
 		}
 
-		// ここでEvasionStateに
-		m_nowUnityChanMotion = UnityChanMotion::Evasion;
-
 		// アニメーションが終わりかどうか
-		if (chData->GetAnimeEnd())
+		if (chData->GetAnimeEnd() && m_nowUnityChanMotion == UnityChanMotion::Evasion)
 			m_nowUnityChanMotion = UnityChanMotion::Idle;
-		
 		else
+		{
+			// ここでEvasionStateに
+			m_nowUnityChanMotion = UnityChanMotion::Evasion;
 			chData->SetAnime(L"Evasion");	// アニメーション続行
+		}
 	}
 	else if (moveVect.x != 0.0f || moveVect.z != 0.0f)	// 入力処理があった時のみ回転を更新する
 	{
@@ -463,6 +503,9 @@ bool UnityChanPlayer::FrameAction()
 		chData->SetPosition(nowPos.x, nowPos.y, nowPos.z);
 	}
 
+	if (m_isTransition)
+		UpdateSceneState();
+
 	// アニメをすすめる
 	chData->UpdateAnimation();
 
@@ -514,6 +557,34 @@ void UnityChanPlayer::FinishAction()
 void UnityChanPlayer::HitReaction(GameObject* targetGo, HitAreaBase* hit)
 {
 	// HP減少
-	m_nowPlHp -= hit->GetHitPower();
-	m_pPlHPbarUiComp->ChangeHp(m_nowPlHp);
+	if (hit->GetHitType() == static_cast<UINT>(HIT_ORDER::HIT_ITEM))
+	{
+		if (m_nowPlHp + hit->GetHitPower() >= m_maxPlHp)
+			m_nowPlHp = m_maxPlHp;				// 最大HPを超えないため
+		else
+			m_nowPlHp += hit->GetHitPower();	// HP回復
+		
+		m_pPlHPbarUiComp->ChangeHp(m_nowPlHp);	// 現在のHPをUIに
+
+		MyGameEngine* pEngine = MyAccessHub::GetMyGameEngine();
+		pEngine->GetSoundManager()->Play(14);
+	}
+	else
+	{
+		m_plTotalDamage += hit->GetHitPower();	// 被ダメージ量を保存
+		m_nowPlHp -= hit->GetHitPower();		// ダメージを受ける
+		m_pPlHPbarUiComp->ChangeHp(m_nowPlHp);	// 現在のHPをUIに
+	}
+
+
+	// HPが0以下なら画面遷移のトランジションをする
+	if (m_nowPlHp <= 0 && !m_isTransition)
+	{
+		m_isTransition = true;
+		m_nextScene = GAME_SCENES::GAME_OVER;	// 次のシーンをゲームオーバーシーンに
+
+		m_pTransitionAnimatorComp->SetWipeMode(WipeMode::WipeOut);
+		m_pTransitionAnimatorComp->PlayTransition();
+		m_sceneState = SceneState::Transition;
+	}
 }

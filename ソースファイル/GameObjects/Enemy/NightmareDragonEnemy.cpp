@@ -3,7 +3,7 @@
 #include "WildHuntScene.h"
 #include "WildHuntEnum.h"
 
-#include "WildHuntUIRender.h"
+#include "PlayTimerUI.h"
 
 // コンポーネント初期化時に呼ばれる処理
 void NightmareDragonEnemy::InitAction()
@@ -61,7 +61,10 @@ bool NightmareDragonEnemy::FrameAction()
 	
 	// ドラゴン破壊チェック
 	if (m_isDestroy)
+	{
+		m_pParchmentResultComp->DefeatEnemy();
 		return false;
+	}
 
 	// プレイヤーの位置データを渡す
 	m_currentNDAIState->SetPlayerPos(m_nowPlayerPos.x, m_nowPlayerPos.y, m_nowPlayerPos.z);
@@ -126,7 +129,7 @@ void NightmareDragonEnemy::HitReaction(GameObject* targetGo, HitAreaBase* hit)
 	if (hit->GetHitType() == (UINT)HIT_ORDER::HIT_PLAYER_ATTACK)
 	{
 		m_nowDragonHp++;
-		if (m_nowDragonHp > 5)
+		if (m_nowDragonHp > 9)
 		{
 			ChangeNowDragonEnemyState(static_cast<UINT>(DragonEnemyState::Die));
 		}

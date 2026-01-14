@@ -24,8 +24,8 @@ void PlayTimerBGUI::InitAction()
 
 	m_timerBGSp->SetSpritePattern(0, tex->fWidth * 1.0f, tex->fHeight * 1.0f, r);
 	m_timerBGSp->SetSpriteIndex(0);
-	m_timerBGSp->SetPosition(340.0f, 200.0f, 2.0f);
-	m_timerBGSp->SetScale(0.15f, 0.15f, 0.15f);
+	m_timerBGSp->SetPosition(340.0f, 200.0f, 2.0f);	// ‘¼‚Ì‰æ‘œ‚ðã‘‚«‚µ‚È‚¢‚½‚ßA‚¿‚å‚Á‚Æ‰œ‚É•\Ž¦B
+	m_timerBGSp->SetScale(0.3f, 0.3f, 0.3f);
 
 	m_timerBGSp->SetColorMix(SpriteCharacter::COLOR_MIX_OP::MIX_MUL);
 	m_timerBGSp->SetColor(1, 1, 1, 1);

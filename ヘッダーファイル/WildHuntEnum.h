@@ -21,3 +21,9 @@ enum class HIT_ORDER	// 判定タイプの enum class
 	HIT_ITEM,
 };
 
+enum class SceneState   // TransitionをアリSceneの状態
+{
+	SceneImage,
+	Transition,
+	Loading,
+};

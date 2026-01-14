@@ -17,7 +17,7 @@ private:
     int m_frameCount = 0;	// フレームカウンタ
     int m_animeCount = 11;	// 現在のアニメパターン番号
 
-    bool m_isAnimFlag;       // アニメーションのフラグ
+    bool m_isAnimFlag;      // アニメーションのフラグ
     WipeMode m_nowWipeMode; // 次の画面遷移がWipeInかWipeOutか
 
     // 次の画面遷移をWipeInに
@@ -34,7 +34,7 @@ private:
         m_animeCount = 0;
     }
 public:
-    //  GameComponent を介して継承されました
+    // GameComponent を介して継承されました
     void InitAction() override;     // コンポーネント初期化時に呼ばれる処理
     bool FrameAction() override;    // 毎フレーム呼ばれる処理　falseを返すとこのコンポーネントは終了し削除される
     void FinishAction() override;   // 終了時に呼ばれる処理

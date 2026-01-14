@@ -23,7 +23,7 @@ void HeartItemComponent::InitAction()
 	m_centerY = (max.y - min.y) * scl.y * 0.5f;	// 0.5 scale
 
 	m_itemHit.SetRadius(m_centerY * 0.8f);	// “K“–‚È”¼Œa
-	m_itemHit.SetAttackType((UINT)HIT_ORDER::HIT_ITEM, 0);
+	m_itemHit.SetAttackType((UINT)HIT_ORDER::HIT_ITEM, 20);
 	sta = 0;
 }
 

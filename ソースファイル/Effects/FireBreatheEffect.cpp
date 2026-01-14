@@ -137,7 +137,7 @@ bool FireBreatheEffect::FrameAction()
 		XMFLOAT3 startPos;
 		XMStoreFloat3(&startPos, headMat.r[3]);
 
-		XMFLOAT3 extendPos = { headMat.r[3].m128_f32[0] + (breathVec.m128_f32[0] * -30.0f), headMat.r[3].m128_f32[1], headMat.r[3].m128_f32[2] + (breathVec.m128_f32[2] * -30.0f) };
+		XMFLOAT3 extendPos = { headMat.r[3].m128_f32[0] + (breathVec.m128_f32[0] * -50.0f), headMat.r[3].m128_f32[1], headMat.r[3].m128_f32[2] + (breathVec.m128_f32[2] * -50.0f) };
 
 		m_fireBreatheHit.SetLine(startPos, extendPos, 5.0f);
 		MyAccessHub::GetMyGameEngine()->GetHitManager()->SetHitArea(this, &m_fireBreatheHit);

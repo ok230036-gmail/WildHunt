@@ -34,19 +34,19 @@ void PlayerHPbarUI::InitAction()
 
 	m_bgSp->SetSpritePattern(0, tex->fWidth, 150.0f, r);
 	m_bgSp->SetSpriteIndex(0);
-	m_bgSp->SetPosition(-230.0f, 220.0f, 0.0f);
+	m_bgSp->SetPosition(-230.0f, 220.0f, 1.0f);	// 他の画像を上書きしないため、ちょっと奥に表示
 
 	r = { 0.0f, 305.0f * invH, 0.95f, 150.0f * invH };	// 現状の画像だとHPマックスは0.95fで、0.24f以下は死亡判定かな 赤ゲージは305
 
 	m_redSp->SetSpritePattern(0, tex->fWidth * 0.95f, 150.0f, r);
 	m_redSp->SetSpriteIndex(0);
-	m_redSp->SetPosition(-230.0f + -260.0f * (1.0f - 0.95f), 220.0f, 0.0f);
+	m_redSp->SetPosition(-230.0f + -260.0f * (1.0f - 0.95f), 220.0f, 1.0f);	// 他の画像を上書きしないため、ちょっと奥に表示
 
 	r = { 0.0f, 160.0f * invH, 0.95f, 150.0f * invH};	// 現状の画像だとHPマックスは0.95fで、0.24f以下は死亡判定かな 赤ゲージは305
 
 	m_greenSp->SetSpritePattern(0, tex->fWidth * 0.95f, 150.0f, r);
 	m_greenSp->SetSpriteIndex(0);
-	m_greenSp->SetPosition(-230.0f + -260.0f * (1.0f - 0.95f), 220.0f, 0.0f);
+	m_greenSp->SetPosition(-230.0f + -260.0f * (1.0f - 0.95f), 220.0f, 1.0f);	// 他の画像を上書きしないため、ちょっと奥に表示
 
 	m_bgSp->SetColorMix(SpriteCharacter::COLOR_MIX_OP::MIX_MUL);
 	m_bgSp->SetColor(1, 1, 1, 1);
@@ -103,7 +103,7 @@ bool PlayerHPbarUI::FrameAction()
 
 		m_greenSp->SetSpritePattern(0, tex->fWidth * m_nowUvHp, 150.0f, r);
 		m_greenSp->SetSpriteIndex(0);
-		m_greenSp->SetPosition(-230.0f + -260.0f * (1.0f - m_nowUvHp), 220.0f, 0.0f);
+		m_greenSp->SetPosition(-230.0f + -260.0f * (1.0f - m_nowUvHp), 220.0f, 1.0f);	// 他の画像を上書きしないため、ちょっと奥に表示
 
 		m_hpChangeFlg = false;
 		m_isRedDecrease = true;
@@ -123,7 +123,7 @@ bool PlayerHPbarUI::FrameAction()
 
 			m_redSp->SetSpritePattern(0, tex->fWidth * m_redUvHp, 150.0f, r);
 			m_redSp->SetSpriteIndex(0);
-			m_redSp->SetPosition(-230.0f + -260.0f * (1.0f - m_redUvHp), 220.0f, 0.0f);
+			m_redSp->SetPosition(-230.0f + -260.0f * (1.0f - m_redUvHp), 220.0f, 1.0f);	// 他の画像を上書きしないため、ちょっと奥に表示
 		}
 		else
 		{

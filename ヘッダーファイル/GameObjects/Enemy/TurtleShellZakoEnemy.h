@@ -1,6 +1,6 @@
 #pragma once
 #include "ZakoEnemyBase.h"
-#include "WildHuntUIRender.h"
+#include "PlayTimerUI.h"
 
 class TurtleShellZakoEnemy :
     public ZakoEnemyBase

@@ -3,7 +3,7 @@
 #include "WildHuntScene.h"
 #include "WildHuntEnum.h"
 
-#include "WildHuntUIRender.h"
+#include "PlayTimerUI.h"
 
 // InitActionの最初に呼ばれる処理
 void TurtleShellZakoEnemy::FirstInitAction()
@@ -90,7 +90,7 @@ void TurtleShellZakoEnemy::ExtraFrameAction()
 
 		if (endata->GetAnimeEnd())	// アニメーション終了で次
 		{
-			m_pUIComp->ScoreUp();
+			m_pParchmentResultComp->DefeatEnemy();
 			m_destroy = true;
 		}
 	}
@@ -165,8 +165,8 @@ void TurtleShellZakoEnemy::HitReaction(GameObject* targetGo, HitAreaBase* hit)
 		FBXCharacterData* endata = static_cast<FBXCharacterData*>(GetGameObject()->GetCharacterData());
 		XMFLOAT3 enPos = endata->GetPosition();
 
-		m_knockbackVect.x = (enPos.x - m_nowPlayerPos.x) * 0.1f;
-		m_knockbackVect.z = (enPos.z - m_nowPlayerPos.z) * 0.1f;
+		m_knockbackVect.x = (enPos.x - m_nowPlayerPos.x) * 0.13f;
+		m_knockbackVect.z = (enPos.z - m_nowPlayerPos.z) * 0.13f;
 	}
 }
 
